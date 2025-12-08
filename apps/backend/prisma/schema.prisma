@@ -1,14 +1,109 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// prisma/schema.prisma
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Role {
+  TEACHER
+  STUDENT
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  TEXT
+}
+
+enum SessionStatus {
+  WAITING
+  ACTIVE
+  FINISHED
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          Role      @default(STUDENT)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  quizzes       Quiz[]    @relation("QuizCreator")
+  participations Participation[]
+}
+
+model Quiz {
+  id          String      @id @default(uuid())
+  title       String
+  description String?
+  creatorId   String
+  creator     User        @relation("QuizCreator", fields: [creatorId], references: [id])
+  questions   Question[]
+  sessions    Session[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Question {
+  id          String        @id @default(uuid())
+  quizId      String
+  quiz        Quiz          @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  text        String
+  type        QuestionType
+  options     Json?         // Pour QCM: ["Option 1", "Option 2", ...]
+  correctAnswer String
+  points      Int           @default(1)
+  order       Int
+  timeLimit   Int?          // En secondes
+  createdAt   DateTime      @default(now())
+  
+  answers     Answer[]
+}
+
+model Session {
+  id            String          @id @default(uuid())
+  code          String          @unique // Code d'accès (ex: "ABC123")
+  quizId        String
+  quiz          Quiz            @relation(fields: [quizId], references: [id])
+  status        SessionStatus   @default(WAITING)
+  currentQuestion Int?          // Index de la question courante
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  createdAt     DateTime        @default(now())
+  
+  participations Participation[]
+}
+
+model Participation {
+  id          String    @id @default(uuid())
+  sessionId   String
+  session     Session   @relation(fields: [sessionId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  score       Int       @default(0)
+  joinedAt    DateTime  @default(now())
+  
+  answers     Answer[]
+  
+  @@unique([sessionId, userId])
+}
+
+model Answer {
+  id              String        @id @default(uuid())
+  participationId String
+  participation   Participation @relation(fields: [participationId], references: [id])
+  questionId      String
+  question        Question      @relation(fields: [questionId], references: [id])
+  answer          String
+  isCorrect       Boolean
+  answeredAt      DateTime      @default(now())
+  timeToAnswer    Int?          // En secondes
+  
+  @@unique([participationId, questionId])
 }
