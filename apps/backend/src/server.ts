@@ -3,6 +3,13 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import { setupWebSocket } from './socket/handlers';
+import { errorHandler } from './middleware/error';
+
+// Import routes
+import authRoutes from './routes/auth.routes';
+import quizRoutes from './routes/quiz.routes';
+import sessionRoutes from './routes/session.routes';
 
 dotenv.config();
 
@@ -22,19 +29,20 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Test route
+// Routes
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running!' });
 });
 
-// WebSocket
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-  
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-  });
-});
+app.use('/api/auth', authRoutes);
+app.use('/api/quizzes', quizRoutes);
+app.use('/api/sessions', sessionRoutes);
+
+// Error handling middleware (doit être après toutes les routes)
+app.use(errorHandler);
+
+// WebSocket setup
+setupWebSocket(io);
 
 const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, () => {
