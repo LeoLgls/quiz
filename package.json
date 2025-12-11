@@ -9,5 +9,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.24.0"
+  "packageManager": "pnpm@10.24.0",
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.1.0",
+    "pg": "^8.16.3"
+  }
 }
