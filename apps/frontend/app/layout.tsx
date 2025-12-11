@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Quiz App - Application de Quiz en Temps Réel",
+  title: "Kaskroot! - Quiz pour les gourmands",
   description: "Créez et participez à des quiz interactifs en temps réel",
 };
 

@@ -56,9 +56,13 @@ export default function CreateSessionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen py-12 px-4" style={{ background: 'linear-gradient(to bottom, #fafafa 0%, #f3f4f6 100%)' }}>
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Créer une session</h1>
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-cyan-600 mb-2">
+            Créer une Session
+          </h1>
+        </div>
 
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
@@ -66,15 +70,15 @@ export default function CreateSessionPage() {
           </div>
         )}
 
-        <div className="bg-white rounded-xl shadow-md p-6 space-y-6">
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 space-y-6 border-2 border-purple-100">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-bold text-gray-700 mb-2">
               Sélectionner un quiz *
             </label>
             <select
               value={selectedQuizId}
               onChange={(e) => setSelectedQuizId(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+              className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 text-gray-900"
             >
               <option value="">-- Choisir un quiz --</option>
               {quizzes.map((quiz) => (
@@ -86,22 +90,22 @@ export default function CreateSessionPage() {
           </div>
 
           {quizzes.length === 0 && (
-            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800">
-              Vous n'avez pas encore de quiz avec des questions. Créez-en un d'abord!
+            <div className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl text-yellow-800 font-medium">
+              ⚠️ Vous n'avez pas encore de quiz. Créez-en un d'abord!
             </div>
           )}
 
           <div className="flex gap-4">
             <button
               onClick={() => router.back()}
-              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+              className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition font-semibold cursor-pointer"
             >
-              Annuler
+              ← Annuler
             </button>
             <button
               onClick={handleCreateSession}
               disabled={isLoading || !selectedQuizId}
-              className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 text-white rounded-xl hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer font-bold"
             >
               {isLoading ? 'Création...' : 'Créer la session'}
             </button>

@@ -82,9 +82,13 @@ export default function CreateQuizPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen py-12 px-4" style={{ background: 'linear-gradient(to bottom, #fafafa 0%, #f3f4f6 100%)' }}>
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Créer un quiz</h1>
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-cyan-600 mb-2">
+            Créer un quiz
+          </h1>
+        </div>
 
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
@@ -93,8 +97,8 @@ export default function CreateQuizPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Informations générales</h2>
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border-2 border-purple-100">
+            <h2 className="text-2xl font-black text-gray-900 mb-4">📝 Informations générales</h2>
             
             <div className="space-y-4">
               <div>
@@ -106,7 +110,7 @@ export default function CreateQuizPage() {
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  className="w-full px-4 py-2 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 transition text-gray-900 placeholder:text-gray-400"
                   placeholder="Ex: Quiz de mathématiques"
                 />
               </div>
@@ -118,7 +122,7 @@ export default function CreateQuizPage() {
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  className="w-full px-4 py-2 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 transition text-gray-900 placeholder:text-gray-400"
                   rows={3}
                   placeholder="Description du quiz..."
                 />
@@ -126,29 +130,29 @@ export default function CreateQuizPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border-2 border-cyan-100">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Questions</h2>
+              <h2 className="text-2xl font-black text-gray-900">❓ Questions</h2>
               <button
                 type="button"
                 onClick={addQuestion}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-cyan-600 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all font-semibold cursor-pointer"
               >
-                Ajouter une question
+                + Ajouter
               </button>
             </div>
 
             <div className="space-y-6">
               {questions.map((q, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
+                <div key={index} className="bg-gradient-to-r from-purple-50 to-cyan-50 border-2 border-purple-200 rounded-xl p-4">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-semibold text-gray-900">Question {index + 1}</h3>
+                    <h3 className="font-black text-gray-900">Question {index + 1}</h3>
                     <button
                       type="button"
                       onClick={() => removeQuestion(index)}
-                      className="text-red-600 hover:text-red-700"
+                      className="text-red-600 hover:text-red-700 font-semibold cursor-pointer"
                     >
-                      Supprimer
+                      ✕ Supprimer
                     </button>
                   </div>
 
@@ -158,14 +162,14 @@ export default function CreateQuizPage() {
                       required
                       value={q.text}
                       onChange={(e) => updateQuestion(index, 'text', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      className="w-full px-3 py-2 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 text-gray-900 placeholder:text-gray-400"
                       placeholder="Texte de la question"
                     />
 
                     <select
                       value={q.type}
                       onChange={(e) => updateQuestion(index, 'type', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      className="w-full px-3 py-2 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 text-gray-900"
                     >
                       <option value="MULTIPLE_CHOICE">QCM</option>
                       <option value="TRUE_FALSE">Vrai/Faux</option>
@@ -176,7 +180,7 @@ export default function CreateQuizPage() {
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">Options:</label>
                         {q.options.map((opt: string, optIndex: number) => (
-                          <input
+                            <input
                             key={optIndex}
                             type="text"
                             value={opt}
@@ -185,7 +189,7 @@ export default function CreateQuizPage() {
                               newOptions[optIndex] = e.target.value;
                               updateQuestion(index, 'options', newOptions);
                             }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            className="w-full px-3 py-2 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 text-gray-900 placeholder:text-gray-400"
                             placeholder={`Option ${optIndex + 1}`}
                           />
                         ))}
@@ -197,7 +201,7 @@ export default function CreateQuizPage() {
                       required
                       value={q.correctAnswer}
                       onChange={(e) => updateQuestion(index, 'correctAnswer', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      className="w-full px-3 py-2 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 text-gray-900 placeholder:text-gray-400"
                       placeholder="Réponse correcte"
                     />
 
@@ -209,7 +213,7 @@ export default function CreateQuizPage() {
                           min="1"
                           value={isNaN(q.points) ? '' : q.points}
                           onChange={(e) => updateQuestion(index, 'points', parseInt(e.target.value) || 1)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          className="w-full px-3 py-2 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 text-gray-900"
                         />
                       </div>
                       <div>
@@ -219,7 +223,7 @@ export default function CreateQuizPage() {
                           min="5"
                           value={isNaN(q.timeLimit) ? '' : q.timeLimit}
                           onChange={(e) => updateQuestion(index, 'timeLimit', parseInt(e.target.value) || 30)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          className="w-full px-3 py-2 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 text-gray-900"
                         />
                       </div>
                     </div>
@@ -233,16 +237,16 @@ export default function CreateQuizPage() {
             <button
               type="button"
               onClick={() => router.back()}
-              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+              className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition font-semibold cursor-pointer"
             >
-              Annuler
+              ← Annuler
             </button>
             <button
               type="submit"
               disabled={isLoading || questions.length === 0}
-              className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 text-white rounded-xl hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer font-bold"
             >
-              {isLoading ? 'Création...' : 'Créer le quiz'}
+              {isLoading ? '⏳ Création...' : 'Créer le quiz'}
             </button>
           </div>
         </form>
