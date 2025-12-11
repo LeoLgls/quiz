@@ -454,6 +454,49 @@ export const setupWebSocket = (io: Server) => {
       }
     });
 
+    // Annuler/Quitter une session (enseignant uniquement)
+    socket.on('cancel-session', async (data: { sessionId: string }) => {
+      try {
+        const { sessionId } = data;
+
+        const session = await prisma.session.findUnique({
+          where: { id: sessionId },
+          include: {
+            quiz: true,
+          },
+        });
+
+        if (!session) {
+          socket.emit('error', { message: 'Session non trouvée' });
+          return;
+        }
+
+        if (session.quiz.creatorId !== socket.userId) {
+          socket.emit('error', { message: 'Accès refusé' });
+          return;
+        }
+
+        // Mettre à jour la session comme annulée
+        await prisma.session.update({
+          where: { id: sessionId },
+          data: {
+            status: 'FINISHED',
+            finishedAt: new Date(),
+          },
+        });
+
+        // Notifier tous les participants que la session a été annulée
+        io.to(`session:${sessionId}`).emit('session-cancelled', {
+          message: 'L\'enseignant a mis fin à la session.',
+        });
+
+        console.log(`Session ${sessionId} cancelled by teacher`);
+      } catch (error) {
+        console.error('Error cancelling session:', error);
+        socket.emit('error', { message: 'Erreur lors de l\'annulation de la session' });
+      }
+    });
+
     // Déconnexion
     socket.on('disconnect', () => {
       console.log(`User disconnected: ${socket.userId}`);

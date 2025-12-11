@@ -13,7 +13,7 @@ export default function TeacherSessionPage() {
   const sessionId = params.id as string;
   const { user } = useAuth(true, 'TEACHER');
   const { socket, isConnected } = useSocket();
-  
+
   const [session, setSession] = useState<Session | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [participantCount, setParticipantCount] = useState(0);
@@ -87,6 +87,19 @@ export default function TeacherSessionPage() {
     }
   };
 
+  const handleCancelSession = () => {
+    if (participantCount === 0) {
+      // Pas de participants, juste rediriger
+      router.push('/teacher/quizzes');
+    } else {
+      // Il y a des participants, notifier et rediriger
+      if (socket) {
+        socket.emit('cancel-session', { sessionId });
+      }
+      router.push('/teacher/quizzes');
+    }
+  };
+
   const handleStartSession = () => {
     if (socket) {
       socket.emit('start-session', { sessionId });
@@ -118,15 +131,15 @@ export default function TeacherSessionPage() {
   const hasMoreQuestions = currentQuestionIndex + 1 < totalQuestions;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm">
+    <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, #fafafa 0%, #f3f4f6 100%)' }}>
+      <nav className="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            <h1 
+            <h1
               onClick={() => router.push('/dashboard')}
-              className="text-2xl font-bold text-gray-900 cursor-pointer hover:text-blue-600 transition"
+              className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-cyan-600 cursor-pointer hover:scale-105 transition"
             >
-              Quiz App
+              Kaskroot!
             </h1>
           </div>
         </div>
@@ -136,22 +149,22 @@ export default function TeacherSessionPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Contrôles */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                {session.quiz?.title || 'Quiz'}
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border-2 border-purple-100">
+              <h2 className="text-3xl font-black text-gray-900 mb-4">
+                📝 {session.quiz?.title || 'Quiz'}
               </h2>
-              
+
               <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="bg-blue-50 p-4 rounded-lg text-center">
-                  <div className="text-3xl font-bold text-blue-600">{session.code}</div>
-                  <div className="text-sm text-gray-600">Code d'accès</div>
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl text-center border-2 border-purple-200">
+                  <div className="text-3xl font-black text-purple-600">{session.code}</div>
+                  <div className="text-sm text-gray-600 font-semibold">Code d'accès</div>
                 </div>
-                <div className="bg-green-50 p-4 rounded-lg text-center">
-                  <div className="text-3xl font-bold text-green-600">{participantCount}</div>
-                  <div className="text-sm text-gray-600">Participants</div>
+                <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 p-4 rounded-xl text-center border-2 border-cyan-200">
+                  <div className="text-3xl font-black text-cyan-600">{participantCount}</div>
+                  <div className="text-sm text-gray-600 font-semibold">Participants</div>
                 </div>
-                <div className="bg-purple-50 p-4 rounded-lg text-center">
-                  <div className="text-3xl font-bold text-purple-600">
+                <div className="bg-gradient-to-br from-violet-50 to-violet-100 p-4 rounded-xl text-center border-2 border-violet-200">
+                  <div className="text-3xl font-black text-violet-600">
                     {session.status === 'FINISHED' ? totalQuestions : currentQuestionIndex + 1}/{totalQuestions}
                   </div>
                   <div className="text-sm text-gray-600">Questions</div>
@@ -166,9 +179,15 @@ export default function TeacherSessionPage() {
                   <button
                     onClick={handleStartSession}
                     disabled={participantCount === 0}
-                    className="w-full py-4 bg-green-600 text-white rounded-lg font-bold text-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-black text-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     Démarrer le quiz
+                  </button>
+                  <button
+                    onClick={handleCancelSession}
+                    className="w-full py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl font-bold hover:shadow-lg hover:scale-105 transition-all cursor-pointer"
+                  >
+                    Quitter la session
                   </button>
                 </div>
               )}
@@ -188,16 +207,16 @@ export default function TeacherSessionPage() {
                     {hasMoreQuestions ? (
                       <button
                         onClick={handleNextQuestion}
-                        className="flex-1 py-4 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition"
+                        className="flex-1 py-4 bg-gradient-to-r from-purple-600 to-cyan-600 text-white rounded-xl font-black hover:shadow-xl hover:scale-105 transition-all cursor-pointer"
                       >
                         Question suivante →
                       </button>
                     ) : (
                       <button
                         onClick={handleEndSession}
-                        className="flex-1 py-4 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition"
+                        className="flex-1 py-4 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl font-black hover:shadow-xl hover:scale-105 transition-all cursor-pointer"
                       >
-                        Terminer le quiz
+                        🏁 Terminer le quiz
                       </button>
                     )}
                   </div>
@@ -211,9 +230,9 @@ export default function TeacherSessionPage() {
                   </p>
                   <button
                     onClick={() => router.push('/teacher/quizzes')}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 text-white rounded-xl hover:shadow-xl hover:scale-105 transition-all font-bold cursor-pointer"
                   >
-                    Retour aux quiz
+                    ← Retour aux quiz
                   </button>
                 </div>
               )}
@@ -222,9 +241,9 @@ export default function TeacherSessionPage() {
 
           {/* Classement en direct */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">
-                Classement en direct
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border-2 border-cyan-100">
+              <h3 className="text-2xl font-black text-gray-900 mb-4">
+                🏆 Classement
               </h3>
               {leaderboard.length === 0 ? (
                 <p className="text-gray-600 text-center py-8">
@@ -235,7 +254,7 @@ export default function TeacherSessionPage() {
                   {leaderboard.map((entry) => (
                     <div
                       key={entry.userId}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-cyan-50 rounded-xl border-2 border-purple-100"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-lg font-bold text-gray-700">
