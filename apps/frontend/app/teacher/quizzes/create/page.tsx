@@ -3,12 +3,15 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../../hooks/useAuth';
-import { quizApi } from '../../../../lib/api';
+import { useCreateQuiz, useAddQuestion } from '../../../../hooks/queries/useQuizzes';
+import { getErrorMessage } from '../../../../lib/api-client';
 import { QuestionType } from '../../../../../../shared';
 
 export default function CreateQuizPage() {
   const { user, isLoading: authLoading } = useAuth(true, 'TEACHER');
   const router = useRouter();
+  const createQuizMutation = useCreateQuiz();
+  const addQuestionMutation = useAddQuestion();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -16,7 +19,6 @@ export default function CreateQuizPage() {
   });
   
   const [questions, setQuestions] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const addQuestion = () => {
@@ -47,34 +49,40 @@ export default function CreateQuizPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
 
-    try {
-      // Créer le quiz
-      const quiz = await quizApi.createQuiz({
+    createQuizMutation.mutate(
+      {
         title: formData.title,
         description: formData.description,
-      });
-
-      // Ajouter les questions
-      for (const question of questions) {
-        await quizApi.addQuestion(quiz.id, {
-          text: question.text,
-          type: question.type,
-          options: question.type === 'MULTIPLE_CHOICE' ? question.options : undefined,
-          correctAnswer: question.correctAnswer,
-          points: question.points,
-          order: question.order,
-          timeLimit: question.timeLimit,
-        });
+      },
+      {
+        onSuccess: async (quiz) => {
+          // Ajouter les questions une par une
+          try {
+            for (const question of questions) {
+              await addQuestionMutation.mutateAsync({
+                quizId: quiz.id,
+                data: {
+                  text: question.text,
+                  type: question.type,
+                  options: question.type === 'MULTIPLE_CHOICE' ? question.options : undefined,
+                  correctAnswer: question.correctAnswer,
+                  points: question.points,
+                  order: question.order,
+                  timeLimit: question.timeLimit,
+                },
+              });
+            }
+            router.push('/teacher/quizzes');
+          } catch (err: any) {
+            setError(err.message || 'Erreur lors de l\'ajout des questions');
+          }
+        },
+        onError: (err) => {
+          setError(getErrorMessage(err));
+        },
       }
-
-      router.push('/teacher/quizzes');
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors de la création du quiz');
-    } finally {
-      setIsLoading(false);
-    }
+    );
   };
 
   if (authLoading) {
@@ -243,10 +251,10 @@ export default function CreateQuizPage() {
             </button>
             <button
               type="submit"
-              disabled={isLoading || questions.length === 0}
+              disabled={createQuizMutation.isPending || addQuestionMutation.isPending || questions.length === 0}
               className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 text-white rounded-xl hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer font-bold"
             >
-              {isLoading ? '⏳ Création...' : 'Créer le quiz'}
+              {(createQuizMutation.isPending || addQuestionMutation.isPending) ? '⏳ Création...' : 'Créer le quiz'}
             </button>
           </div>
         </form>

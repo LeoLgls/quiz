@@ -91,5 +91,23 @@ apiClient.interceptors.response.use(
   }
 );
 
+// Helper pour extraire le message d'erreur
+export const getErrorMessage = (error: unknown): string => {
+  if (!error) return 'Une erreur est survenue';
+  
+  if (typeof error === 'string') return error;
+  
+  if (error && typeof error === 'object') {
+    if ('message' in error && typeof error.message === 'string') {
+      return error.message;
+    }
+    if ('error' in error && typeof error.error === 'string') {
+      return error.error;
+    }
+  }
+  
+  return 'Une erreur est survenue';
+};
+
 export { apiClient };
 export default apiClient;
