@@ -26,7 +26,9 @@ export const setupWebSocket = (io: Server) => {
   });
 
   io.on('connection', (socket: AuthSocket) => {
-    console.log(`User connected: ${socket.userId}`);
+    console.log('=== NEW CONNECTION ===');
+    console.log('User connected - userId:', socket.userId);
+    console.log('Socket ID:', socket.id);
 
     // Rejoindre une session
     socket.on('join-session', async (data: { sessionId: string }) => {
@@ -34,6 +36,9 @@ export const setupWebSocket = (io: Server) => {
         const { sessionId } = data;
         socket.sessionId = sessionId;
         socket.join(`session:${sessionId}`);
+
+        console.log('=== JOIN SESSION ===');
+        console.log('User:', socket.userId, 'joining session:', sessionId);
 
         // Récupérer la session
         const session = await prisma.session.findUnique({
@@ -248,6 +253,12 @@ export const setupWebSocket = (io: Server) => {
       try {
         const { sessionId, questionId, answer, timeToAnswer } = data;
 
+        console.log('=== SUBMIT ANSWER DEBUG ===');
+        console.log('Socket userId:', socket.userId);
+        console.log('Session ID:', sessionId);
+        console.log('Question ID:', questionId);
+        console.log('Answer:', answer);
+
         // Vérifier la participation
         const participation = await prisma.participation.findUnique({
           where: {
@@ -258,7 +269,10 @@ export const setupWebSocket = (io: Server) => {
           },
         });
 
+        console.log('Participation found:', participation ? participation.id : 'NULL');
+
         if (!participation) {
+          console.log('ERROR: No participation found for userId:', socket.userId);
           socket.emit('error', { message: 'Vous n\'avez pas rejoint cette session' });
           return;
         }
@@ -273,7 +287,10 @@ export const setupWebSocket = (io: Server) => {
           },
         });
 
+        console.log('Existing answer:', existingAnswer ? 'YES' : 'NO');
+
         if (existingAnswer) {
+          console.log('ERROR: Answer already exists for participationId:', participation.id, 'questionId:', questionId);
           socket.emit('error', { message: 'Vous avez déjà répondu à cette question' });
           return;
         }
@@ -356,52 +373,7 @@ export const setupWebSocket = (io: Server) => {
           userId: socket.userId,
         });
 
-        // Passer automatiquement à la question suivante
-        const currentIndex = session.currentQuestion ?? 0;
-        const nextIndex = currentIndex + 1;
-
-        if (nextIndex < session.quiz.questions.length) {
-          // Il y a une question suivante
-          const nextQuestion = session.quiz.questions[nextIndex];
-
-          // Mettre à jour l'index de la question courante
-          await prisma.session.update({
-            where: { id: sessionId },
-            data: { currentQuestion: nextIndex },
-          });
-
-          // Envoyer la prochaine question à tout le monde
-          io.to(`session:${sessionId}`).emit('question-broadcast', {
-            question: {
-              id: nextQuestion.id,
-              text: nextQuestion.text,
-              type: nextQuestion.type,
-              options: nextQuestion.options,
-              order: nextQuestion.order,
-              points: nextQuestion.points,
-            },
-            timeLimit: nextQuestion.timeLimit || 30,
-            questionNumber: nextIndex + 1,
-            totalQuestions: session.quiz.questions.length,
-          });
-        } else {
-          // C'était la dernière question - terminer la session
-          await prisma.session.update({
-            where: { id: sessionId },
-            data: {
-              status: 'FINISHED',
-              finishedAt: new Date(),
-            },
-          });
-
-          const finalLeaderboard = await getSessionLeaderboard(sessionId);
-
-          io.to(`session:${sessionId}`).emit('session-ended', {
-            finalLeaderboard,
-          });
-        }
-
-        console.log(`Answer submitted by ${socket.userId} for question ${questionId}`);
+        console.log(`User ${socket.userId} submitted answer for question ${questionId}`);
       } catch (error) {
         console.error('Error submitting answer:', error);
         socket.emit('error', { message: 'Erreur lors de la soumission de la réponse' });
