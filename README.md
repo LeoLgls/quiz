@@ -61,16 +61,10 @@ NEXT_PUBLIC_WS_URL=http://localhost:5000/
 
 ```bash
 cd ./apps/backend/
-
 pnpm i
-
-pnpm add -D prisma
-pnpm add @prisma/client
 
 pnpm prisma generate
 pnpm prisma migrate dev --name init
-
-pnpm dev
 ```
 
 ---
@@ -79,10 +73,40 @@ pnpm dev
 
 ```bash
 cd ./apps/frontend/
-
 pnpm i
+```
+
+### 3. Commandes utiles
+
+* Lancer le backend en développement
+```bash
+cd ./apps/backend/
 pnpm dev
 ```
+
+* Lancer le frontend en développement
+```bash
+cd ./apps/frontend/
+pnpm dev
+```
+
+* Voir la base de données avec Prisma Studio
+```bash
+cd ./apps/backend/
+npx prisma studio
+```
+
+Appliquer les migrations Prisma
+```bash
+cd ./apps/backend/
+pnpm prisma migrate dev --name <nom_migration>
+```
+
+Tester la santé de l’API (endpoint /api/health)
+```bash
+curl http://localhost:5000/api/health
+```
+
 
 ## Architecture
 
@@ -116,26 +140,27 @@ quiz/
 ## Technologies Utilisées
 
 ### Backend
-- **Node.js + Express** : API REST
-- **Socket.IO** : Communication bidirectionnelle temps réel
-- **Prisma** : ORM pour PostgreSQL
-- **JWT** : Authentification sécurisée
-- **bcryptjs** : Hachage des mots de passe
-- **TypeScript** : Typage statique
+
+* Node.js + Express : rapide, flexible, écosystème riche pour API REST.
+* Socket.IO : communication temps réel fiable pour les sessions de quiz.
+* Prisma : typage TypeScript complet, migrations simples, requêtes sécurisées.
+* JWT : auth stateless sécurisée.
+* bcryptjs : hachage sécurisé des mots de passe.
+* TypeScript : typage strict, réduit les bugs et améliore la lisibilité.
 
 ### Frontend
-- **Next.js 15** : Framework React avec App Router
-- **React 19** : Bibliothèque UI
-- **Socket.IO Client** : Client WebSocket
-- **Axios** : Client HTTP avec interceptors
-- **Zustand** : State management léger
-- **TanStack Query** : Gestion des requêtes
-- **Tailwind CSS** : Styling
-- **TypeScript** : Typage statique
+
+* Next.js : performance et App Router moderne.
+* React : bibliothèque UI robuste.
+* Socket.IO Client : synchronisation temps réel.
+* Axios : gestion simplifiée des requêtes et des erreurs.
+* Zustand : state management léger et performant.
+* TanStack Query : gestion du cache et des requêtes.
+* Tailwind CSS : styling rapide et cohérent.
 
 ### Base de données
-- **PostgreSQL** : Base de données relationnelle
 
+* PostgreSQL : relationnelle robuste, adaptée aux relations Quiz → Questions → Sessions → Réponses, compatible avec Prisma.
 
 ## Utilisation
 
@@ -167,105 +192,124 @@ quiz/
 
 ## API Endpoints
 
+Documentation complète API : https://documenter.getpostman.com/view/50257644/2sB3dSRUmV
+
 ### Authentification
-- `POST /api/auth/register` - Inscription
-- `POST /api/auth/login` - Connexion
-- `GET /api/auth/me` - Profil utilisateur (authentifié)
+* `POST /api/auth/register` - Inscription
+* `POST /api/auth/login` - Connexion
+* `GET /api/auth/me` - Profil utilisateur (authentifié)
 
 ### Quiz (Enseignants uniquement)
-- `GET /api/quizzes` - Liste des quiz
-- `POST /api/quizzes` - Créer un quiz
-- `GET /api/quizzes/:id` - Détails d'un quiz
-- `PUT /api/quizzes/:id` - Modifier un quiz
-- `DELETE /api/quizzes/:id` - Supprimer un quiz
-- `POST /api/quizzes/:quizId/questions` - Ajouter une question
-- `PUT /api/quizzes/questions/:questionId` - Modifier une question
-- `DELETE /api/quizzes/questions/:questionId` - Supprimer une question
+* `GET /api/quizzes` - Liste des quiz
+* `POST /api/quizzes` - Créer un quiz
+* `GET /api/quizzes/:id` - Détails d'un quiz
+* `PUT /api/quizzes/:id` - Modifier un quiz
+* `DELETE /api/quizzes/:id` - Supprimer un quiz
+* `POST /api/quizzes/:quizId/questions` - Ajouter une question
+* `PUT /api/quizzes/questions/:questionId` - Modifier une question
+* `DELETE /api/quizzes/questions/:questionId` - Supprimer une question
 
 ### Sessions
-- `POST /api/sessions` - Créer une session (enseignant)
-- `GET /api/sessions/:id` - Détails d'une session
-- `POST /api/sessions/join` - Rejoindre une session (étudiant)
-- `POST /api/sessions/:id/start` - Démarrer une session (enseignant)
-- `POST /api/sessions/:id/next` - Question suivante (enseignant)
-- `POST /api/sessions/:id/end` - Terminer une session (enseignant)
-- `POST /api/sessions/answer` - Soumettre une réponse (étudiant)
-- `GET /api/sessions/:id/leaderboard` - Classement
+* `POST /api/sessions` - Créer une session (enseignant)
+* `GET /api/sessions/:id` - Détails d'une session
+* `POST /api/sessions/join` - Rejoindre une session (étudiant)
+* `POST /api/sessions/:id/start` - Démarrer une session (enseignant)
+* `POST /api/sessions/:id/next` - Question suivante (enseignant)
+* `POST /api/sessions/:id/end` - Terminer une session (enseignant)
+* `POST /api/sessions/answer` - Soumettre une réponse (étudiant)
+* `GET /api/sessions/:id/leaderboard` - Classement
 
-## 🔄 Événements WebSocket
+## Événements WebSocket
 
 ### Client → Serveur
-- `join-session` - Rejoindre une session
-- `leave-session` - Quitter une session
-- `start-session` - Démarrer une session (enseignant)
-- `next-question` - Passer à la question suivante (enseignant)
-- `end-session` - Terminer une session (enseignant)
-- `submit-answer` - Soumettre une réponse (étudiant)
+* `join-session` - Rejoindre une session
+* `leave-session` - Quitter une session
+* `start-session` - Démarrer une session (enseignant)
+* `next-question` - Passer à la question suivante (enseignant)
+* `end-session` - Terminer une session (enseignant)
+* `submit-answer` - Soumettre une réponse (étudiant)
 
 ### Serveur → Client
-- `session-state` - État initial de la session
-- `session-started` - Session démarrée
-- `question-broadcast` - Nouvelle question diffusée
-- `question-ended` - Fin d'une question + classement
-- `session-ended` - Session terminée + classement final
-- `participant-joined` - Nouveau participant
-- `participant-left` - Participant parti
-- `answer-submitted` - Confirmation de réponse
-- `error` - Erreur
+* `session-state` - État initial de la session
+* `session-started` - Session démarrée
+* `question-broadcast` - Nouvelle question diffusée
+* `question-ended` - Fin d'une question + classement
+* `session-ended` - Session terminée + classement final
+* `participant-joined` - Nouveau participant
+* `participant-left` - Participant parti
+* `answer-submitted` - Confirmation de réponse
+* `error` - Erreur
 
-## 🛡️ Sécurité
+## Utilisation de Socket.io
 
-- ✅ Authentification JWT avec tokens expirables
-- ✅ Mots de passe hachés avec bcryptjs
-- ✅ Protection des routes par middleware
-- ✅ Validation des rôles côté serveur
-- ✅ Authentification WebSocket par token
-- ✅ Gestion centralisée des erreurs
-- ✅ CORS configuré
+1. **Pourquoi Socket.IO a été choisi pour ce projet :**
+    * Communication bidirectionnelle en temps réel.
+    * Gestion simple des rooms/sessions.
+    * Reconnexion automatique et compatibilité navigateur.
 
-## 🎯 Points Forts de l'Architecture
+2. **Comment il est utilisé dans le projet :**
+
+    * Backend : serveur Express + Socket.IO gère les sessions de quiz.
+    * Frontend : client Socket.IO se connecte aux rooms correspondantes et reçoit les événements.
+    * Les événements listés (join-session, next-question, etc.) reflètent cette architecture temps réel.
+
+3. **Avantages pour le projet :**
+    * Les étudiants voient les questions et le classement en direct.
+    * L’enseignant peut contrôler le déroulement des sessions en temps réel.
+
+## Sécurité
+
+* Authentification JWT avec tokens expirables
+* Mots de passe hachés avec bcryptjs
+* Protection des routes par middleware
+* Validation des rôles côté serveur
+* Authentification WebSocket par token
+* Gestion centralisée des erreurs
+* CORS configuré
+
+## Points Forts de l'Architecture
 
 ### Integration Full-Stack
-- **Types partagés** : Package `shared/` avec toutes les interfaces TypeScript communes
-- **Client API centralisé** : Interceptors Axios pour JWT et gestion d'erreurs
-- **State management** : Zustand pour l'authentification côté client
-- **Custom hooks** : `useAuth` pour la protection des routes, `useSocket` pour WebSocket
+* **Types partagés** : Package `shared/` avec toutes les interfaces TypeScript communes
+* **Client API centralisé** : Interceptors Axios pour JWT et gestion d'erreurs
+* **State management** : Zustand pour l'authentification côté client
+* **Custom hooks** : `useAuth` pour la protection des routes, `useSocket` pour WebSocket
 
 ### Communication Temps Réel
-- Synchronisation instantanée entre tous les participants
-- Gestion automatique des reconnexions
-- Diffusion efficace des événements par room
-- Timer synchronisé sur tous les clients
+* Synchronisation instantanée entre tous les participants
+* Gestion automatique des reconnexions
+* Diffusion efficace des événements par room
+* Timer synchronisé sur tous les clients
 
 ### Expérience Utilisateur
-- Interface responsive et moderne avec Tailwind CSS
-- Feedback visuel en temps réel (animations, indicateurs)
-- Messages d'erreur clairs et contextuels
-- Navigation intuitive
+* Interface responsive et moderne avec Tailwind CSS
+* Feedback visuel en temps réel (animations, indicateurs)
+* Messages d'erreur clairs et contextuels
+* Navigation intuitive
 
-## 📝 Modèle de Données
+## Modèle de Données
 
 ### User
-- id, email, password (haché), name, role (TEACHER/STUDENT)
+* id, email, password (haché), name, role (TEACHER/STUDENT)
 
 ### Quiz
-- id, title, description, creatorId → User
-- Relations : questions[], sessions[]
+* id, title, description, creatorId → User
+* Relations : questions[], sessions[]
 
 ### Question
-- id, quizId → Quiz, text, type (MULTIPLE_CHOICE/TRUE_FALSE/TEXT)
-- options (JSON), correctAnswer, points, order, timeLimit
+* id, quizId → Quiz, text, type (MULTIPLE_CHOICE/TRUE_FALSE/TEXT)
+* options (JSON), correctAnswer, points, order, timeLimit
 
 ### Session
-- id, code (unique), quizId → Quiz, status (WAITING/ACTIVE/FINISHED)
-- currentQuestion, startedAt, finishedAt
-- Relations : participations[]
+* id, code (unique), quizId → Quiz, status (WAITING/ACTIVE/FINISHED)
+* currentQuestion, startedAt, finishedAt
+* Relations : participations[]
 
 ### Participation
-- id, sessionId → Session, userId → User, score, joinedAt
-- Relations : answers[]
+* id, sessionId → Session, userId → User, score, joinedAt
+* Relations : answers[]
 
 ### Answer
-- id, participationId → Participation, questionId → Question
-- answer, isCorrect, answeredAt, timeToAnswer
+* id, participationId → Participation, questionId → Question
+* answer, isCorrect, answeredAt, timeToAnswer
 
