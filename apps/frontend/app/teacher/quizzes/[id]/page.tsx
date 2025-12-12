@@ -1,17 +1,23 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../../../hooks/useAuth';
-import { useCreateQuiz, useAddQuestion } from '../../../../hooks/queries/useQuizzes';
+import { useQuiz, useUpdateQuiz, useAddQuestion, useUpdateQuestion, useDeleteQuestion } from '../../../../hooks/queries/useQuizzes';
 import { getErrorMessage } from '../../../../lib/api-client';
 import { QuestionType } from '../../../../../../shared';
 
-export default function CreateQuizPage() {
+export default function EditQuizPage() {
+  const params = useParams();
+  const quizId = params.id as string;
   const { user, isLoading: authLoading } = useAuth(true, 'TEACHER');
   const router = useRouter();
-  const createQuizMutation = useCreateQuiz();
+  
+  const { data: quiz, isLoading: quizLoading } = useQuiz(quizId);
+  const updateQuizMutation = useUpdateQuiz();
   const addQuestionMutation = useAddQuestion();
+  const updateQuestionMutation = useUpdateQuestion();
+  const deleteQuestionMutation = useDeleteQuestion();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -21,10 +27,22 @@ export default function CreateQuizPage() {
   const [questions, setQuestions] = useState<any[]>([]);
   const [error, setError] = useState('');
 
+  // Charger les données du quiz
+  useEffect(() => {
+    if (quiz) {
+      setFormData({
+        title: quiz.title,
+        description: quiz.description || '',
+      });
+      setQuestions(quiz.questions || []);
+    }
+  }, [quiz]);
+
   const addQuestion = () => {
     setQuestions([
       ...questions,
       {
+        id: `new-${Date.now()}`,
         text: '',
         type: 'MULTIPLE_CHOICE' as QuestionType,
         options: ['', '', '', ''],
@@ -32,11 +50,19 @@ export default function CreateQuizPage() {
         points: 1,
         timeLimit: 30,
         order: questions.length,
+        isNew: true,
       },
     ]);
   };
 
   const removeQuestion = (index: number) => {
+    const question = questions[index];
+    
+    // Si c'est une question existante, la supprimer du backend
+    if (!question.isNew && question.id) {
+      deleteQuestionMutation.mutate(question.id);
+    }
+    
     setQuestions(questions.filter((_, i) => i !== index));
   };
 
@@ -50,43 +76,55 @@ export default function CreateQuizPage() {
     e.preventDefault();
     setError('');
 
-    createQuizMutation.mutate(
-      {
-        title: formData.title,
-        description: formData.description,
-      },
-      {
-        onSuccess: async (quiz) => {
-          // Ajouter les questions une par une
-          try {
-            for (const question of questions) {
-              await addQuestionMutation.mutateAsync({
-                quizId: quiz.id,
-                data: {
-                  text: question.text,
-                  type: question.type,
-                  options: question.type === 'MULTIPLE_CHOICE' ? question.options : undefined,
-                  correctAnswer: question.correctAnswer,
-                  points: question.points,
-                  order: question.order,
-                  timeLimit: question.timeLimit,
-                },
-              });
-            }
-            router.push('/teacher/quizzes');
-          } catch (err: any) {
-            setError(err.message || 'Erreur lors de l\'ajout des questions');
-          }
+    try {
+      // 1. Mettre à jour les infos du quiz
+      await updateQuizMutation.mutateAsync({
+        id: quizId,
+        data: {
+          title: formData.title,
+          description: formData.description,
         },
-        onError: (err) => {
-          setError(getErrorMessage(err));
-        },
+      });
+
+      // 2. Traiter les questions
+      for (const [index, question] of questions.entries()) {
+        const questionData = {
+          text: question.text,
+          type: question.type,
+          options: question.type === 'MULTIPLE_CHOICE' ? question.options : undefined,
+          correctAnswer: question.correctAnswer,
+          points: question.points,
+          order: index,
+          timeLimit: question.timeLimit,
+        };
+
+        if (question.isNew) {
+          // Nouvelle question : créer
+          await addQuestionMutation.mutateAsync({
+            quizId: quizId,
+            data: questionData,
+          });
+        } else {
+          // Question existante : mettre à jour
+          await updateQuestionMutation.mutateAsync({
+            questionId: question.id,
+            data: questionData,
+          });
+        }
       }
-    );
+
+      router.push('/teacher/quizzes');
+    } catch (err: any) {
+      setError(getErrorMessage(err));
+    }
   };
 
-  if (authLoading) {
+  if (authLoading || quizLoading) {
     return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
+  }
+
+  if (!quiz) {
+    return <div className="min-h-screen flex items-center justify-center">Quiz non trouvé</div>;
   }
 
   return (
@@ -94,7 +132,7 @@ export default function CreateQuizPage() {
       <div className="max-w-4xl mx-auto">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-cyan-600 mb-2">
-            Créer un quiz
+            Modifier le quiz
           </h1>
         </div>
 
@@ -152,7 +190,7 @@ export default function CreateQuizPage() {
 
             <div className="space-y-6">
               {questions.map((q, index) => (
-                <div key={index} className="bg-gradient-to-r from-purple-50 to-cyan-50 border-2 border-purple-200 rounded-xl p-4">
+                <div key={q.id || index} className="bg-gradient-to-r from-purple-50 to-cyan-50 border-2 border-purple-200 rounded-xl p-4">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="font-black text-gray-900">Question {index + 1}</h3>
                     <button
@@ -187,13 +225,13 @@ export default function CreateQuizPage() {
                     {q.type === 'MULTIPLE_CHOICE' && (
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">Options:</label>
-                        {q.options.map((opt: string, optIndex: number) => (
-                            <input
+                        {(q.options || ['', '', '', '']).map((opt: string, optIndex: number) => (
+                          <input
                             key={optIndex}
                             type="text"
                             value={opt}
                             onChange={(e) => {
-                              const newOptions = [...q.options];
+                              const newOptions = [...(q.options || ['', '', '', ''])];
                               newOptions[optIndex] = e.target.value;
                               updateQuestion(index, 'options', newOptions);
                             }}
@@ -283,10 +321,10 @@ export default function CreateQuizPage() {
             </button>
             <button
               type="submit"
-              disabled={createQuizMutation.isPending || addQuestionMutation.isPending || questions.length === 0}
+              disabled={updateQuizMutation.isPending || addQuestionMutation.isPending || updateQuestionMutation.isPending || questions.length === 0}
               className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 text-white rounded-xl hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer font-bold"
             >
-              {(createQuizMutation.isPending || addQuestionMutation.isPending) ? '⏳ Création...' : 'Créer le quiz'}
+              {(updateQuizMutation.isPending || addQuestionMutation.isPending || updateQuestionMutation.isPending) ? '⏳ Enregistrement...' : 'Enregistrer les modifications'}
             </button>
           </div>
         </form>

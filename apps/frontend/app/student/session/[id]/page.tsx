@@ -221,7 +221,36 @@ export default function StudentSessionPage() {
                   </div>
                 )}
 
-                {currentQuestion.type !== 'MULTIPLE_CHOICE' && (
+                {currentQuestion.type === 'TRUE_FALSE' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      onClick={() => setAnswer('true')}
+                      disabled={hasAnswered}
+                      className={`p-6 rounded-2xl border-3 transition-all font-black text-lg ${
+                        answer === 'true'
+                          ? 'border-green-600 bg-gradient-to-r from-green-100 to-emerald-100 shadow-lg scale-[1.05]'
+                          : 'border-gray-300 hover:border-green-400 hover:shadow-md bg-white'
+                      } ${hasAnswered ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.02]'}`}
+                    >
+                      <div className="text-green-500 text-4xl mb-2">✓</div>
+                      <div className="text-gray-900">Vrai</div>
+                    </button>
+                    <button
+                      onClick={() => setAnswer('false')}
+                      disabled={hasAnswered}
+                      className={`p-6 rounded-2xl border-3 transition-all font-black text-lg ${
+                        answer === 'false'
+                          ? 'border-red-600 bg-gradient-to-r from-red-100 to-pink-100 shadow-lg scale-[1.05]'
+                          : 'border-gray-300 hover:border-red-400 hover:shadow-md bg-white'
+                      } ${hasAnswered ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.02]'}`}
+                    >
+                      <div className="text-red-500 text-4xl mb-2">✗</div>
+                      <div className="text-gray-900">Faux</div>
+                    </button>
+                  </div>
+                )}
+
+                {currentQuestion.type === 'TEXT' && (
                   <input
                     type="text"
                     value={answer}
