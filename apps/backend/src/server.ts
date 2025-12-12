@@ -1,6 +1,9 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
+
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { setupWebSocket } from './socket/handlers';
@@ -11,7 +14,7 @@ import authRoutes from './routes/auth.routes';
 import quizRoutes from './routes/quiz.routes';
 import sessionRoutes from './routes/session.routes';
 
-dotenv.config();
+
 
 const app = express();
 const httpServer = createServer(app);
