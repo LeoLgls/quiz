@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../../../hooks/useAuth';
 import { useSocket } from '../../../../hooks/useSocket';
-import { sessionApi } from '../../../../lib/api';
+import { useSession, useLeaderboard } from '../../../../hooks/queries/useSessions';
 import { Session, LeaderboardEntry } from '../../../../../../shared';
 
 export default function TeacherSessionPage() {
@@ -14,16 +14,27 @@ export default function TeacherSessionPage() {
   const { user } = useAuth(true, 'TEACHER');
   const { socket, isConnected } = useSocket();
 
+  // Utiliser TanStack Query pour le chargement initial
+  const { data: initialSession, isLoading: sessionLoading, refetch: refetchSession } = useSession(sessionId);
+  const { data: initialLeaderboard = [], refetch: refetchLeaderboard } = useLeaderboard(sessionId);
+
   const [session, setSession] = useState<Session | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [participantCount, setParticipantCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Initialiser avec les données de TanStack Query
+  useEffect(() => {
+    if (initialSession) {
+      setSession(initialSession);
+      setParticipantCount(initialSession.participations?.length || 0);
+    }
+  }, [initialSession]);
 
   useEffect(() => {
-    if (sessionId) {
-      loadSession();
+    if (initialLeaderboard.length > 0) {
+      setLeaderboard(initialLeaderboard);
     }
-  }, [sessionId]);
+  }, [initialLeaderboard]);
 
   useEffect(() => {
     if (socket && sessionId && isConnected) {
@@ -32,60 +43,45 @@ export default function TeacherSessionPage() {
       socket.on('session-state', (data: Session) => {
         setSession(data);
         setParticipantCount(data.participations?.length || 0);
-        setIsLoading(false);
+      });
+
+      socket.on('session-started', () => {
+        // Le quiz a démarré, recharger la session pour avoir le nouveau statut
+        refetchSession();
       });
 
       socket.on('participant-joined', () => {
-        loadSession();
+        // Recharger la session pour avoir les nouveaux participants
+        refetchSession();
+        refetchLeaderboard();
       });
 
       socket.on('answer-received', () => {
-        loadLeaderboard();
+        refetchLeaderboard();
       });
 
       socket.on('question-broadcast', () => {
-        loadSession();
-        loadLeaderboard();
+        // Recharger la session pour avoir le nouveau currentQuestion
+        refetchSession();
+        refetchLeaderboard();
       });
 
       socket.on('session-ended', (data: any) => {
         setLeaderboard(data.finalLeaderboard || []);
-        loadSession();
+        // Recharger la session pour avoir le statut FINISHED
+        refetchSession();
       });
 
       return () => {
         socket.off('session-state');
+        socket.off('session-started');
         socket.off('participant-joined');
         socket.off('answer-received');
         socket.off('question-broadcast');
         socket.off('session-ended');
       };
     }
-  }, [socket, sessionId, isConnected]);
-
-  const loadSession = async () => {
-    try {
-      const data = await sessionApi.getSession(sessionId);
-      setSession(data);
-      setParticipantCount(data.participations?.length || 0);
-      if (data.status !== 'WAITING') {
-        loadLeaderboard();
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadLeaderboard = async () => {
-    try {
-      const data = await sessionApi.getLeaderboard(sessionId);
-      setLeaderboard(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  }, [socket, sessionId, isConnected, refetchSession, refetchLeaderboard]);
 
   const handleCancelSession = () => {
     if (participantCount === 0) {
@@ -118,7 +114,7 @@ export default function TeacherSessionPage() {
     }
   };
 
-  if (isLoading) {
+  if (sessionLoading) {
     return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
   }
 
@@ -214,12 +210,19 @@ export default function TeacherSessionPage() {
                     ) : (
                       <button
                         onClick={handleEndSession}
-                        className="flex-1 py-4 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl font-black hover:shadow-xl hover:scale-105 transition-all cursor-pointer"
+                        className="flex-1 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-black hover:shadow-xl hover:scale-105 transition-all cursor-pointer"
                       >
-                        🏁 Terminer le quiz
+                        Terminer le quiz
                       </button>
                     )}
                   </div>
+                  
+                  <button
+                    onClick={handleCancelSession}
+                    className="w-full py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl font-bold hover:shadow-lg hover:scale-105 transition-all cursor-pointer"
+                  >
+                    Quitter la session
+                  </button>
                 </div>
               )}
 
@@ -230,9 +233,9 @@ export default function TeacherSessionPage() {
                   </p>
                   <button
                     onClick={() => router.push('/teacher/quizzes')}
-                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 text-white rounded-xl hover:shadow-xl hover:scale-105 transition-all font-bold cursor-pointer"
+                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-cyan-600 text-white rounded-xl hover:shadow-xl hover:scale-105 transition-all font-bold cursor-pointer"
                   >
-                    ← Retour aux quiz
+                    Terminer la session
                   </button>
                 </div>
               )}

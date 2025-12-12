@@ -1,34 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuthStore } from '../../store/auth';
+import { useLogin } from '../../hooks/queries/useAuth';
+import { getErrorMessage } from '../../lib/api-client';
 
 export default function LoginPage() {
-  const router = useRouter();
-  const { login } = useAuthStore();
+  const loginMutation = useLogin();
   
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
-    try {
-      await login(formData.email, formData.password);
-      router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors de la connexion');
-    } finally {
-      setIsLoading(false);
-    }
+    loginMutation.mutate(formData);
   };
 
   return (
@@ -39,14 +26,18 @@ export default function LoginPage() {
       
       <div className="w-full max-w-md bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl p-8 border border-white/20 relative z-10">
         <div className="text-center mb-8">
+          <div className="text-6xl mb-4">🎯</div>
           <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-violet-600 to-cyan-600 mb-2">
             Connexion
           </h1>
+          <p className="text-gray-600 font-medium">
+            Accédez à vos quiz interactifs
+          </p>
         </div>
 
-        {error && (
+        {loginMutation.isError && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-            {error}
+            {getErrorMessage(loginMutation.error)}
           </div>
         )}
 
@@ -83,10 +74,10 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={loginMutation.isPending}
             className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 text-white py-3 rounded-xl font-bold hover:shadow-lg hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all duration-200"
           >
-            {isLoading ? 'Connexion...' : 'Se connecter'}
+            {loginMutation.isPending ? 'Connexion...' : 'Se connecter'}
           </button>
         </form>
 

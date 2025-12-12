@@ -3,29 +3,26 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../hooks/useAuth';
-import { sessionApi } from '../../../lib/api';
+import { useJoinSession } from '../../../hooks/queries/useSessions';
+import { getErrorMessage } from '../../../lib/api-client';
 
 export default function JoinSessionPage() {
   const { user, isLoading: authLoading } = useAuth(true, 'STUDENT');
   const router = useRouter();
+  const joinMutation = useJoinSession();
   
   const [code, setCode] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
-    try {
-      const { session } = await sessionApi.joinSession({ code: code.toUpperCase() });
-      router.push(`/student/session/${session.id}`);
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors de la connexion à la session');
-    } finally {
-      setIsLoading(false);
-    }
+    joinMutation.mutate(
+      { code: code.toUpperCase() },
+      {
+        onSuccess: ({ session }) => {
+          router.push(`/student/session/${session.id}`);
+        },
+      }
+    );
   };
 
   if (authLoading) {
@@ -48,9 +45,9 @@ export default function JoinSessionPage() {
           </p>
         </div>
 
-        {error && (
+        {joinMutation.isError && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-            {error}
+            {getErrorMessage(joinMutation.error)}
           </div>
         )}
 
@@ -73,10 +70,10 @@ export default function JoinSessionPage() {
 
           <button
             type="submit"
-            disabled={isLoading || code.length !== 6}
+            disabled={joinMutation.isPending || code.length !== 6}
             className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 text-white py-4 rounded-2xl font-black text-lg hover:shadow-xl hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all duration-200"
           >
-            {isLoading ? 'Connexion...' : 'C\'est parti !'}
+            {joinMutation.isPending ? 'Connexion...' : 'C\'est parti !'}
           </button>
         </form>
 

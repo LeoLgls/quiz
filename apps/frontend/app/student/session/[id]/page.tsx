@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../../../hooks/useAuth';
 import { useSocket } from '../../../../hooks/useSocket';
-import { sessionApi } from '../../../../lib/api';
+import { useSession } from '../../../../hooks/queries/useSessions';
 import { Session, Question, LeaderboardEntry, SessionStatus } from '../../../../../../shared';
 
 export default function StudentSessionPage() {
@@ -13,6 +13,9 @@ export default function StudentSessionPage() {
   const sessionId = params.id as string;
   const { user } = useAuth(true, 'STUDENT');
   const { socket, isConnected } = useSocket();
+  
+  // Utiliser TanStack Query pour le chargement initial
+  const { data: initialSession, isLoading: sessionLoading } = useSession(sessionId);
   
   const [session, setSession] = useState<Session | null>(null);
   const [quizTitle, setQuizTitle] = useState<string>('');
@@ -23,15 +26,18 @@ export default function StudentSessionPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [questionNumber, setQuestionNumber] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Initialiser avec les données de TanStack Query
   useEffect(() => {
-    if (sessionId) {
-      loadSession();
+    if (initialSession) {
+      setSession(initialSession);
+      if (initialSession.quiz?.title) {
+        setQuizTitle(initialSession.quiz.title);
+      }
     }
-  }, [sessionId]);
+  }, [initialSession]);
 
   useEffect(() => {
     if (socket && sessionId && isConnected) {
@@ -41,7 +47,6 @@ export default function StudentSessionPage() {
       // Écouter les événements
       socket.on('session-state', (data: Session) => {
         setSession(data);
-        setIsLoading(false);
       });
 
       socket.on('session-started', ({ session }: { session: Session }) => {
@@ -99,7 +104,7 @@ export default function StudentSessionPage() {
         socket.off('error');
       };
     }
-  }, [socket, sessionId, isConnected]);
+  }, [socket, sessionId, isConnected, router]);
 
   useEffect(() => {
     if (timeLeft > 0 && currentQuestion && !hasAnswered) {
@@ -109,20 +114,6 @@ export default function StudentSessionPage() {
       return () => clearInterval(timer);
     }
   }, [timeLeft, currentQuestion, hasAnswered]);
-
-  const loadSession = async () => {
-    try {
-      const data = await sessionApi.getSession(sessionId);
-      setSession(data);
-      if (data.quiz?.title) {
-        setQuizTitle(data.quiz.title);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSubmitAnswer = () => {
     if (!socket || !currentQuestion || !answer.trim() || hasAnswered || isSubmitting) {
@@ -140,7 +131,7 @@ export default function StudentSessionPage() {
     });
   };
 
-  if (isLoading) {
+  if (sessionLoading) {
     return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
   }
 

@@ -1,59 +1,47 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../../../hooks/useAuth';
-import { sessionApi, quizApi } from '../../../../lib/api';
-import { Quiz } from '../../../../../../shared';
+import { useQuizzes } from '../../../../hooks/queries/useQuizzes';
+import { useCreateSession } from '../../../../hooks/queries/useSessions';
+import { getErrorMessage } from '../../../../lib/api-client';
 
 export default function CreateSessionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const quizIdParam = searchParams.get('quizId');
   const { user, isLoading: authLoading } = useAuth(true, 'TEACHER');
+  const { data: allQuizzes = [], isLoading: quizzesLoading, error: quizzesError } = useQuizzes();
+  const createSessionMutation = useCreateSession();
   
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [selectedQuizId, setSelectedQuizId] = useState(quizIdParam || '');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [validationError, setValidationError] = useState('');
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      loadQuizzes();
-    }
-  }, [authLoading, user]);
-
-  const loadQuizzes = async () => {
-    try {
-      const data = await quizApi.getMyQuizzes();
-      setQuizzes(data.filter((q: Quiz) => q.questions && q.questions.length > 0));
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors du chargement des quiz');
-    }
-  };
+  const quizzes = allQuizzes.filter((q) => q.questions && q.questions.length > 0);
 
   const handleCreateSession = async () => {
     if (!selectedQuizId) {
-      setError('Veuillez sélectionner un quiz');
+      setValidationError('Veuillez sélectionner un quiz');
       return;
     }
 
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const session = await sessionApi.createSession({ quizId: selectedQuizId });
-      router.push(`/teacher/sessions/${session.id}`);
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors de la création de la session');
-    } finally {
-      setIsLoading(false);
-    }
+    setValidationError('');
+    createSessionMutation.mutate(
+      { quizId: selectedQuizId },
+      {
+        onSuccess: (session) => {
+          router.push(`/teacher/sessions/${session.id}`);
+        },
+      }
+    );
   };
 
-  if (authLoading) {
+  if (authLoading || quizzesLoading) {
     return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
   }
+
+  const displayError = validationError || (quizzesError ? getErrorMessage(quizzesError) : '') || (createSessionMutation.isError ? getErrorMessage(createSessionMutation.error) : '');
 
   return (
     <div className="min-h-screen py-12 px-4" style={{ background: 'linear-gradient(to bottom, #fafafa 0%, #f3f4f6 100%)' }}>
@@ -64,9 +52,9 @@ export default function CreateSessionPage() {
           </h1>
         </div>
 
-        {error && (
+        {displayError && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            {error}
+            {displayError}
           </div>
         )}
 
@@ -104,10 +92,10 @@ export default function CreateSessionPage() {
             </button>
             <button
               onClick={handleCreateSession}
-              disabled={isLoading || !selectedQuizId}
+              disabled={createSessionMutation.isPending || !selectedQuizId}
               className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 text-white rounded-xl hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer font-bold"
             >
-              {isLoading ? 'Création...' : 'Créer la session'}
+              {createSessionMutation.isPending ? 'Création...' : 'Créer la session'}
             </button>
           </div>
         </div>

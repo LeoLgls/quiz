@@ -1,13 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuthStore } from '../../store/auth';
+import { useRegister } from '../../hooks/queries/useAuth';
+import { getErrorMessage } from '../../lib/api-client';
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const { register } = useAuthStore();
+  const registerMutation = useRegister();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -16,35 +15,32 @@ export default function RegisterPage() {
     confirmPassword: '',
     role: 'STUDENT' as 'TEACHER' | 'STUDENT',
   });
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [validationError, setValidationError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setValidationError('');
 
     // Validation
     if (formData.password !== formData.confirmPassword) {
-      setError('Les mots de passe ne correspondent pas');
+      setValidationError('Les mots de passe ne correspondent pas');
       return;
     }
 
     if (formData.password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères');
+      setValidationError('Le mot de passe doit contenir au moins 6 caractères');
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      await register(formData.email, formData.password, formData.name, formData.role);
-      router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors de l\'inscription');
-    } finally {
-      setIsLoading(false);
-    }
+    registerMutation.mutate({
+      email: formData.email,
+      password: formData.password,
+      name: formData.name,
+      role: formData.role,
+    });
   };
+
+  const displayError = validationError || (registerMutation.isError ? getErrorMessage(registerMutation.error) : '');
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden p-4" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)' }}>
@@ -54,14 +50,18 @@ export default function RegisterPage() {
       
       <div className="w-full max-w-md bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl p-8 border border-white/20 relative z-10">
         <div className="text-center mb-8">
+          <div className="text-6xl mb-3">✨</div>
           <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-violet-600 to-cyan-600 mb-2">
             Inscription
           </h1>
+          <p className="text-gray-600 font-medium">
+            Rejoignez la communauté Kaskroot!
+          </p>
         </div>
 
-        {error && (
+        {displayError && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-            {error}
+            {displayError}
           </div>
         )}
 
@@ -143,10 +143,10 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={registerMutation.isPending}
             className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 text-white py-3 rounded-xl font-bold hover:shadow-lg hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all duration-200"
           >
-            {isLoading ? 'Création...' : 'Créer mon compte'}
+            {registerMutation.isPending ? 'Création...' : 'Créer mon compte'}
           </button>
         </form>
 

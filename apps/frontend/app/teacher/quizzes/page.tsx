@@ -1,47 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../hooks/useAuth';
-import { quizApi } from '../../../lib/api';
-import { Quiz } from '../../../../../shared';
+import { useQuizzes, useDeleteQuiz } from '../../../hooks/queries/useQuizzes';
 import { Plus, Edit, Trash2, Play } from 'lucide-react';
 
 export default function TeacherQuizzesPage() {
   const { user, isLoading: authLoading } = useAuth(true, 'TEACHER');
   const router = useRouter();
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (!authLoading && user) {
-      loadQuizzes();
-    }
-  }, [authLoading, user]);
-
-  const loadQuizzes = async () => {
-    try {
-      const data = await quizApi.getMyQuizzes();
-      setQuizzes(data);
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors du chargement des quiz');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  
+  const { data: quizzes = [], isLoading, error } = useQuizzes();
+  const deleteQuizMutation = useDeleteQuiz();
 
   const handleDelete = async (id: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce quiz ?')) {
       return;
     }
 
-    try {
-      await quizApi.deleteQuiz(id);
-      setQuizzes(quizzes.filter(q => q.id !== id));
-    } catch (err: any) {
-      alert(err.message || 'Erreur lors de la suppression');
-    }
+    deleteQuizMutation.mutate(id);
   };
 
   if (authLoading || isLoading) {
