@@ -29,7 +29,6 @@ cd quiz
 
 ---
 
-
 ## Configuration des fichiers d'environnement
 
 ### Backend (`.env`)
@@ -269,3 +268,4 @@ quiz/
 ### Answer
 - id, participationId → Participation, questionId → Question
 - answer, isCorrect, answeredAt, timeToAnswer
+
