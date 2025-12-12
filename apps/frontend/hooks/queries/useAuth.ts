@@ -7,7 +7,7 @@ import type { LoginRequest, RegisterRequest } from '../../../../shared';
 // Hook pour la connexion
 export function useLogin() {
   const router = useRouter();
-  const { setUser } = useAuthStore();
+  const authStore = useAuthStore();
 
   return useMutation({
     mutationFn: async (data: LoginRequest) => {
@@ -18,8 +18,11 @@ export function useLogin() {
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
       
-      // Mettre à jour le store Zustand
-      setUser(response.user);
+      // Mettre à jour complètement le store Zustand (avec isAuthenticated)
+      authStore.user = response.user;
+      authStore.token = response.token;
+      authStore.isAuthenticated = true;
+      authStore.isLoading = false;
       
       // Rediriger vers le dashboard
       router.push('/dashboard');
@@ -33,7 +36,7 @@ export function useLogin() {
 // Hook pour l'inscription
 export function useRegister() {
   const router = useRouter();
-  const { setUser } = useAuthStore();
+  const authStore = useAuthStore();
 
   return useMutation({
     mutationFn: async (data: RegisterRequest) => {
@@ -44,8 +47,11 @@ export function useRegister() {
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
       
-      // Mettre à jour le store Zustand
-      setUser(response.user);
+      // Mettre à jour complètement le store Zustand (avec isAuthenticated)
+      authStore.user = response.user;
+      authStore.token = response.token;
+      authStore.isAuthenticated = true;
+      authStore.isLoading = false;
       
       // Rediriger vers le dashboard
       router.push('/dashboard');

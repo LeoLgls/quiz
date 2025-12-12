@@ -21,6 +21,7 @@ export default function TeacherSessionPage() {
   const [session, setSession] = useState<Session | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [participantCount, setParticipantCount] = useState(0);
+  const [answeredParticipants, setAnsweredParticipants] = useState<Set<string>>(new Set());
 
   // Initialiser avec les données de TanStack Query
   useEffect(() => {
@@ -56,11 +57,15 @@ export default function TeacherSessionPage() {
         refetchLeaderboard();
       });
 
-      socket.on('answer-received', () => {
+      socket.on('answer-received', (data: { userId: string; participationId: string }) => {
+        // Ajouter le participant à la liste de ceux qui ont répondu
+        setAnsweredParticipants(prev => new Set(prev).add(data.userId));
         refetchLeaderboard();
       });
 
       socket.on('question-broadcast', () => {
+        // Nouvelle question : réinitialiser la liste des réponses
+        setAnsweredParticipants(new Set());
         // Recharger la session pour avoir le nouveau currentQuestion
         refetchSession();
         refetchLeaderboard();
@@ -197,6 +202,43 @@ export default function TeacherSessionPage() {
                     <p className="text-gray-700">
                       {session.quiz?.questions?.[currentQuestionIndex]?.text || 'Chargement...'}
                     </p>
+                  </div>
+
+                  {/* Statut des réponses */}
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border-2 border-blue-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-bold text-gray-900">📊 Réponses reçues</h4>
+                      <span className="text-lg font-black text-blue-600">
+                        {answeredParticipants.size}/{participantCount}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {session.participations?.map((participation) => {
+                        const hasAnswered = answeredParticipants.has(participation.userId);
+                        const userName = participation.user?.name || 'Participant';
+                        return (
+                          <div
+                            key={participation.id}
+                            className={`flex items-center justify-between p-2 rounded-lg ${
+                              hasAnswered
+                                ? 'bg-green-100 border-2 border-green-300'
+                                : 'bg-gray-100 border-2 border-gray-300'
+                            }`}
+                          >
+                            <span className="font-medium text-gray-900">
+                              {userName}
+                            </span>
+                            <span className="text-sm font-bold">
+                              {hasAnswered ? (
+                                <span className="text-green-600">✓ Répondu</span>
+                              ) : (
+                                <span className="text-gray-500">⏳ En attente</span>
+                              )}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <div className="flex gap-4">
